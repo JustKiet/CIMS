@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { ProtectedRoute } from '@/components/auth'
 import { DashboardLayout } from '@/components/layout'
-import { ProjectHeader, ProjectTable, ProjectCreateModal } from '@/components/projects'
+import { ProjectHeader, ProjectTable, ProjectCreateModal, ProjectUpdateModal } from '@/components/projects'
 import { Pagination, ConfirmDialog } from '@/components/ui'
 import { useProjects } from '@/hooks/useProjects'
 import { ProjectResponse } from '@/lib/api'
@@ -41,6 +41,8 @@ function ProjectsContent() {
   })
   const [deleting, setDeleting] = useState(false)
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [updateModalOpen, setUpdateModalOpen] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<ProjectResponse | null>(null)
 
   if (!user) return null
 
@@ -53,9 +55,14 @@ function ProjectsContent() {
     await refetch()
   }
 
+  const handleUpdateSuccess = async () => {
+    // Refresh the projects list
+    await refetch()
+  }
+
   const handleEditProject = (project: ProjectResponse) => {
-    // TODO: Implement edit project functionality
-    console.log('Edit project:', project)
+    setSelectedProject(project)
+    setUpdateModalOpen(true)
   }
 
   const handleDeleteProject = (projectId: number) => {
@@ -151,6 +158,14 @@ function ProjectsContent() {
           open={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
           onSuccess={handleCreateSuccess}
+        />
+
+        {/* Project Update Modal */}
+        <ProjectUpdateModal
+          open={updateModalOpen}
+          onClose={() => setUpdateModalOpen(false)}
+          onSuccess={handleUpdateSuccess}
+          project={selectedProject}
         />
       </div>
     </DashboardLayout>

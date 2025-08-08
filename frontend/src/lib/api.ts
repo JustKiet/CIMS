@@ -67,6 +67,22 @@ export interface ProjectCreate {
   level_id: number
 }
 
+export interface ProjectUpdate {
+  name?: string
+  start_date?: string
+  end_date?: string
+  budget?: number
+  budget_currency?: string
+  type?: ProjectType
+  required_recruits?: number
+  recruited?: number
+  status?: ProjectStatus
+  customer_id?: number
+  expertise_id?: number
+  area_id?: number
+  level_id?: number
+}
+
 export interface ProjectResponse {
   project_id: number
   name: string
@@ -121,8 +137,33 @@ export interface CustomerResponse {
   representative_phone: string
   representative_email: string
   representative_role: string
+  field_name?: string
   created_at: string
   updated_at: string
+}
+
+export interface CustomerCreate {
+  name: string
+  field_id: number
+  representative_name: string
+  representative_phone: string
+  representative_email: string
+  representative_role: string
+}
+
+export interface CustomerUpdate {
+  name?: string
+  field_id?: number
+  representative_name?: string
+  representative_phone?: string
+  representative_email?: string
+  representative_role?: string
+}
+
+export interface CustomerDetailResponse {
+  success: boolean
+  message: string
+  data: CustomerResponse
 }
 
 export interface CustomerListResponse {
@@ -208,8 +249,32 @@ export interface HeadhunterResponse {
   email: string
   area_id: number
   role: string
+  area_name?: string
   created_at: string
   updated_at: string
+}
+
+export interface HeadhunterCreate {
+  name: string
+  phone: string
+  email: string
+  area_id: number
+  role?: string
+  password: string
+}
+
+export interface HeadhunterUpdate {
+  name?: string
+  phone?: string
+  email?: string
+  area_id?: number
+  role?: string
+}
+
+export interface HeadhunterDetailResponse {
+  success: boolean
+  message: string
+  data: HeadhunterResponse
 }
 
 export interface HeadhunterListResponse {
@@ -318,6 +383,71 @@ export interface LevelListResponse {
     has_next: boolean
     has_previous: boolean
   }
+}
+
+// Nominee types
+export type NomineeStatus = 
+  | "DECU" 
+  | "PHONGVAN" 
+  | "THUONGLUONG" 
+  | "THUVIEC"
+  | "TUCHOI"
+  | "KYHOPDONG"
+
+export interface NomineeResponse {
+  nominee_id: number
+  candidate_id: number
+  project_id: number
+  status: NomineeStatus
+  campaign: string
+  years_of_experience: number
+  salary_expectation: number
+  notice_period: number
+  nominee_name?: string
+  project_name?: string
+  headhunter_name?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface NomineeCreate {
+  candidate_id: number
+  project_id: number
+  status: NomineeStatus
+  campaign: string
+  years_of_experience: number
+  salary_expectation: number
+  notice_period: number
+}
+
+export interface NomineeUpdate {
+  candidate_id?: number
+  project_id?: number
+  status?: NomineeStatus
+  campaign?: string
+  years_of_experience?: number
+  salary_expectation?: number
+  notice_period?: number
+}
+
+export interface NomineeListResponse {
+  success: boolean
+  message: string
+  data: NomineeResponse[]
+  pagination: {
+    total: number
+    page: number
+    page_size: number
+    total_pages: number
+    has_next: boolean
+    has_previous: boolean
+  }
+}
+
+export interface NomineeDetailResponse {
+  success: boolean
+  message: string
+  data: NomineeResponse
 }
 
 export class APIError extends Error {
@@ -624,6 +754,40 @@ export const projectAPI = {
     }
   },
 
+  async updateProject(projectId: number, projectData: ProjectUpdate): Promise<ProjectDetailResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(projectData),
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to update project',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while updating project', 0, 'Failed to connect to server')
+    }
+  },
+
   async deleteProject(projectId: number): Promise<void> {
     try {
       const token = TokenManager.getToken()
@@ -653,19 +817,16 @@ export const projectAPI = {
       }
       throw new APIError('Network error while deleting project', 0, 'Failed to connect to server')
     }
-  }
-}
+  },
 
-// Customer API functions
-export const customerAPI = {
-  async getCustomers(page = 1, pageSize = 100): Promise<CustomerListResponse> {
+  async getProjectsByCustomer(customerId: number, page = 1, pageSize = 20): Promise<ProjectListResponse> {
     try {
       const token = TokenManager.getToken()
       if (!token) {
         throw new APIError('Not authenticated', 401)
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/customers?page=${page}&page_size=${pageSize}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/projects/customer/${customerId}?page=${page}&page_size=${pageSize}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -675,6 +836,82 @@ export const customerAPI = {
 
       if (!response.ok) {
         const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to fetch customer projects',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while fetching customer projects', 0, 'Failed to connect to server')
+    }
+  }
+}
+
+// Customer API functions
+export const customerAPI = {
+  async createCustomer(customerData: CustomerCreate): Promise<CustomerDetailResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/customers`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customerData)
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to create customer',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while creating customer', 0, 'Failed to connect to server')
+    }
+  },
+
+  async getCustomers(page = 1, pageSize = 100): Promise<CustomerListResponse> {
+    try {
+      const token = TokenManager.getToken()
+      console.log('Token exists:', !!token)
+      console.log('Token expired:', TokenManager.isTokenExpired())
+      
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/customers/?page=${page}&page_size=${pageSize}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        console.error('HTTP Error:', response.status, response.statusText)
+        console.error('Request URL:', `${API_BASE_URL}/api/v1/customers/?page=${page}&page_size=${pageSize}`)
+        const errorData: ErrorResponse = await response.json()
+        console.error('Error details:', errorData)
         throw new APIError(
           'Failed to fetch customers',
           response.status,
@@ -689,6 +926,103 @@ export const customerAPI = {
       }
       throw new APIError('Network error while fetching customers', 0, 'Failed to connect to server')
     }
+  },
+
+  async searchCustomers(query: string, page = 1, pageSize = 20): Promise<CustomerListResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/customers/search?query=${encodeURIComponent(query)}&page=${page}&page_size=${pageSize}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to search customers',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while searching customers', 0, 'Failed to connect to server')
+    }
+  },
+
+  async updateCustomer(customerId: number, customerData: CustomerUpdate): Promise<CustomerDetailResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/customers/${customerId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customerData),
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to update customer',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while updating customer', 0, 'Failed to connect to server')
+    }
+  },
+
+  async deleteCustomer(customerId: number): Promise<void> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/customers/${customerId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to delete customer',
+          response.status,
+          errorData.detail
+        )
+      }
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while deleting customer', 0, 'Failed to connect to server')
+    }
   }
 }
 
@@ -701,7 +1035,7 @@ export const expertiseAPI = {
         throw new APIError('Not authenticated', 401)
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/expertises?page=${page}&page_size=${pageSize}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/expertises/?page=${page}&page_size=${pageSize}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -737,7 +1071,7 @@ export const areaAPI = {
         throw new APIError('Not authenticated', 401)
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/areas?page=${page}&page_size=${pageSize}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/areas/?page=${page}&page_size=${pageSize}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -773,7 +1107,7 @@ export const levelAPI = {
         throw new APIError('Not authenticated', 401)
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/levels?page=${page}&page_size=${pageSize}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/levels/?page=${page}&page_size=${pageSize}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1026,6 +1360,40 @@ export const fieldAPI = {
 }
 
 export const headhunterAPI = {
+  async createHeadhunter(headhunterData: HeadhunterCreate): Promise<HeadhunterDetailResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/headhunters`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(headhunterData)
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to create headhunter',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while creating headhunter', 0, 'Failed to connect to server')
+    }
+  },
+
   async getHeadhunters(page = 1, pageSize = 100): Promise<HeadhunterListResponse> {
     try {
       const token = TokenManager.getToken()
@@ -1058,4 +1426,322 @@ export const headhunterAPI = {
       throw new APIError('Network error while fetching headhunters', 0, 'Failed to connect to server')
     }
   },
+
+  async searchHeadhunters(query: string, page = 1, pageSize = 20): Promise<HeadhunterListResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/headhunters/search?query=${encodeURIComponent(query)}&page=${page}&page_size=${pageSize}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to search headhunters',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while searching headhunters', 0, 'Failed to connect to server')
+    }
+  },
+
+  async updateHeadhunter(headhunterId: number, headhunterData: HeadhunterUpdate): Promise<HeadhunterDetailResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/headhunters/${headhunterId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(headhunterData)
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to update headhunter',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while updating headhunter', 0, 'Failed to connect to server')
+    }
+  },
+
+  async deleteHeadhunter(headhunterId: number): Promise<void> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/headhunters/${headhunterId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to delete headhunter',
+          response.status,
+          errorData.detail
+        )
+      }
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while deleting headhunter', 0, 'Failed to connect to server')
+    }
+  }
+}
+
+// Nominee API functions
+export const nomineeAPI = {
+  async createNominee(nomineeData: NomineeCreate): Promise<NomineeDetailResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/nominees`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(nomineeData),
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to create nominee',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while creating nominee', 0, 'Failed to connect to server')
+    }
+  },
+
+  async getNomineesByCandidate(candidateId: number, page = 1, pageSize = 20): Promise<NomineeListResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/nominees/by-candidate/${candidateId}?page=${page}&page_size=${pageSize}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to fetch nominees',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while fetching nominees', 0, 'Failed to connect to server')
+    }
+  },
+
+  async getNominee(nomineeId: number): Promise<NomineeDetailResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/nominees/${nomineeId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to fetch nominee',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while fetching nominee', 0, 'Failed to connect to server')
+    }
+  },
+
+  async updateNominee(nomineeId: number, nomineeData: NomineeUpdate): Promise<NomineeDetailResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/nominees/${nomineeId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(nomineeData),
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to update nominee',
+          response.status,
+          errorData.detail
+        )
+      }
+
+      return await response.json()
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while updating nominee', 0, 'Failed to connect to server')
+    }
+  },
+
+  async deleteNominee(nomineeId: number): Promise<void> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/nominees/${nomineeId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData: ErrorResponse = await response.json()
+        throw new APIError(
+          'Failed to delete nominee',
+          response.status,
+          errorData.detail
+        )
+      }
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      throw new APIError('Network error while deleting nominee', 0, 'Failed to connect to server')
+    }
+  },
+
+  async getNomineesByProject(projectId: number, page = 1, pageSize = 20): Promise<NomineeListResponse> {
+    try {
+      const token = TokenManager.getToken()
+      if (!token) {
+        throw new APIError('Not authenticated', 401)
+      }
+
+      console.log(`Fetching nominees for project ${projectId}...`)
+      const url = `${API_BASE_URL}/api/v1/nominees/by-project/${projectId}?page=${page}&page_size=${pageSize}`
+      console.log('Request URL:', url)
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log('Response status:', response.status)
+
+      if (!response.ok) {
+        console.error('HTTP Error:', response.status, response.statusText)
+        try {
+          const errorData: ErrorResponse = await response.json()
+          console.error('Error details:', errorData)
+          throw new APIError(
+            'Failed to fetch project nominees',
+            response.status,
+            errorData.detail
+          )
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError)
+          throw new APIError(
+            'Failed to fetch project nominees',
+            response.status,
+            `HTTP ${response.status}: ${response.statusText}`
+          )
+        }
+      }
+
+      const result = await response.json()
+      console.log('Successfully fetched nominees:', result)
+      return result
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error
+      }
+      console.error('Network error:', error)
+      throw new APIError('Network error while fetching project nominees', 0, 'Failed to connect to server')
+    }
+  }
 }

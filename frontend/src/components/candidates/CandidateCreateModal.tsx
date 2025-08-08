@@ -237,6 +237,17 @@ export const CandidateCreateModal: React.FC<CandidateCreateModalProps> = ({
     const filteredOptions = options.filter(opt => 
       opt.name.toLowerCase().includes(searchValue.toLowerCase())
     )
+    const searchInputRef = useRef<HTMLInputElement>(null)
+
+    // Auto-focus the search input when dropdown opens
+    useEffect(() => {
+      if (isOpen && searchInputRef.current) {
+        // Small delay to ensure the dropdown is rendered
+        setTimeout(() => {
+          searchInputRef.current?.focus()
+        }, 50)
+      }
+    }, [isOpen])
 
     return (
       <div className="relative">
@@ -258,11 +269,16 @@ export const CandidateCreateModal: React.FC<CandidateCreateModalProps> = ({
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <input
+                    ref={searchInputRef}
                     type="text"
                     placeholder={`Tìm ${label.toLowerCase()}...`}
                     value={searchValue}
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm"
+                    onKeyDown={(e) => {
+                      // Prevent the dropdown from closing when pressing keys
+                      e.stopPropagation()
+                    }}
                   />
                 </div>
               </div>
