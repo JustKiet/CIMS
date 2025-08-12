@@ -8,6 +8,9 @@
 .env.ngrok
 .env.external
 
+# Ngrok configuration (contains auth tokens)
+ngrok.yml
+
 # Docker
 docker-compose.override.yml
 
