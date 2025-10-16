@@ -297,7 +297,7 @@ export const CandidateNominationModal: React.FC<CandidateNominationModalProps> =
       <div ref={modalRef} className="bg-white rounded-lg w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-          <h2 className="text-xl font-semibold text-gray-900">CHI TIẾT ĐỀ CỬ</h2>
+          <h2 className="text-xl font-semibold text-gray-900">QUẢN LÝ ĐỀ CỬ</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"

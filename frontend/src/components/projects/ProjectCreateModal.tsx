@@ -314,7 +314,7 @@ export const ProjectCreateModal: React.FC<ProjectCreateModalProps> = ({
 
             {/* Level Selection */}
             <SearchableDropdown
-              label="Cấp độ"
+              label="Cấp bậc"
               value={formData.level_id}
               options={levels}
               searchValue={levelSearch}

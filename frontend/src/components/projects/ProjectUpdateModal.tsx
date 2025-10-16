@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { X, ChevronDown, Plus } from 'lucide-react'
+import { NomineeCard } from './NomineeCard'
 import { 
   projectAPI, 
   nomineeAPI,
@@ -38,10 +39,6 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-import {
-  useSortable,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 
 interface ProjectUpdateModalProps {
   open: boolean
@@ -60,13 +57,12 @@ interface NomineeWithCandidate extends NomineeResponse {
   candidate_phone?: string
 }
 
-// Nominee statuses for the columns
+// Nominee statuses for the columns (excluding reject which has its own section)
 const NOMINEE_STATUSES: { key: NomineeStatus; label: string; color: string }[] = [
   { key: 'DECU', label: 'Đề cử', color: 'bg-gray-100 text-gray-900 border-gray-400' },
   { key: 'PHONGVAN', label: 'Phỏng vấn', color: 'bg-gray-100 text-gray-900 border-gray-400' },
   { key: 'THUONGLUONG', label: 'Thương lượng', color: 'bg-gray-100 text-gray-900 border-gray-400' },
   { key: 'THUVIEC', label: 'Thử việc', color: 'bg-gray-100 text-gray-900 border-gray-400' },
-  { key: 'TUCHOI', label: 'Từ chối', color: 'bg-gray-100 text-gray-900 border-gray-400' },
   { key: 'KYHOPDONG', label: 'Ký hợp đồng', color: 'bg-gray-100 text-gray-900 border-gray-400' },
 ]
 
@@ -81,47 +77,6 @@ const STATUS_OPTIONS: { value: NomineeStatus; label: string }[] = [
 ]
 
 const REJECTED_STATUS = { key: 'TUCHOI' as NomineeStatus, label: 'Từ chối', color: 'bg-gray-100 text-gray-900 border-gray-400' }
-
-interface NomineeCardProps {
-  nominee: NomineeWithCandidate
-  isDragging?: boolean
-}
-
-const NomineeCard: React.FC<NomineeCardProps> = ({ nominee, isDragging = false }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: nominee.nominee_id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
-    >
-      <div className="text-sm font-medium text-gray-900 mb-1">
-        {nominee.candidate_name || 'Không tìm thấy tên'}
-      </div>
-      <div className="text-xs text-gray-600">
-        {nominee.candidate_phone || 'Không có SĐT'}
-      </div>
-      <div className="text-xs text-gray-500 mt-1">
-        Kinh nghiệm: {nominee.years_of_experience} năm
-      </div>
-    </div>
-  )
-}
 
 interface DroppableColumnProps {
   status: NomineeStatus
@@ -210,7 +165,6 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null)
 
   // Drag and drop
-  const [activeId, setActiveId] = useState<string | number | null>(null)
   const [draggedNominee, setDraggedNominee] = useState<NomineeWithCandidate | null>(null)
 
   const sensors = useSensors(
@@ -401,7 +355,6 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
-    setActiveId(active.id)
     
     const nominee = projectNominees.find(n => n.nominee_id === active.id)
     setDraggedNominee(nominee || null)
@@ -410,7 +363,6 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     
-    setActiveId(null)
     setDraggedNominee(null)
     
     if (!over) return
@@ -533,59 +485,50 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
     setError(null)
 
     try {
-      // Only send fields that have changed
-      const updateData: ProjectUpdate = {}
-      
-      if (formData.name !== project.name) {
-        updateData.name = formData.name
-      }
-      if (formData.start_date !== project.start_date) {
-        updateData.start_date = formData.start_date
-      }
-      if (formData.end_date !== project.end_date) {
-        updateData.end_date = formData.end_date
-      }
-      if (formData.budget !== project.budget) {
-        updateData.budget = formData.budget
-      }
-      if (formData.budget_currency !== project.budget_currency) {
-        updateData.budget_currency = formData.budget_currency
-      }
-      if (formData.type !== project.type) {
-        updateData.type = formData.type
-      }
-      if (formData.required_recruits !== project.required_recruits) {
-        updateData.required_recruits = formData.required_recruits
-      }
-      if (formData.recruited !== project.recruited) {
-        updateData.recruited = formData.recruited
-      }
-      if (formData.status !== project.status) {
-        updateData.status = formData.status
-      }
-      if (formData.customer_id !== project.customer_id) {
-        updateData.customer_id = formData.customer_id
-      }
-      if (formData.expertise_id !== project.expertise_id) {
-        updateData.expertise_id = formData.expertise_id
-      }
-      if (formData.area_id !== project.area_id) {
-        updateData.area_id = formData.area_id
-      }
-      if (formData.level_id !== project.level_id) {
-        updateData.level_id = formData.level_id
-      }
-
-      // Only proceed if there are changes
-      if (Object.keys(updateData).length === 0) {
-        setError('Không có thay đổi nào để cập nhật')
-        return
+      // Send all form data for update, let backend handle what changed
+      const updateData: ProjectUpdate = {
+        name: formData.name,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        budget: formData.budget,
+        budget_currency: formData.budget_currency,
+        type: formData.type,
+        required_recruits: formData.required_recruits,
+        recruited: formData.recruited,
+        status: formData.status,
+        customer_id: formData.customer_id,
+        expertise_id: formData.expertise_id,
+        area_id: formData.area_id,
+        level_id: formData.level_id
       }
 
       await projectAPI.updateProject(project.project_id, updateData)
-      onSuccess()
-      onClose()
-      resetForm()
+      
+      // Show success message
+      setError(null)
+      
+      // Show success notification for 2 seconds
+      const successDiv = document.createElement('div')
+      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[100] transition-opacity duration-300'
+      successDiv.textContent = 'Cập nhật dự án thành công!'
+      document.body.appendChild(successDiv)
+      
+      setTimeout(() => {
+        successDiv.style.opacity = '0'
+        setTimeout(() => {
+          if (document.body.contains(successDiv)) {
+            document.body.removeChild(successDiv)
+          }
+        }, 300)
+      }, 2000)
+      
+      // Wait a moment before calling success callback
+      setTimeout(() => {
+        onSuccess()
+        onClose()
+        resetForm()
+      }, 500)
+      
     } catch (err) {
       if (err instanceof APIError) {
         setError(err.detail || err.message)
@@ -987,7 +930,7 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="flex-1"
+                      className="flex-1 bg-[#982B1C] hover:bg-[#7A2116] text-white"
                     >
                       {loading ? 'Đang cập nhật...' : 'Cập nhật'}
                     </Button>
@@ -1031,7 +974,6 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
                               <NomineeCard 
                                 key={nominee.nominee_id} 
                                 nominee={nominee}
-                                isDragging={activeId === nominee.nominee_id}
                               />
                             ))}
                           </DroppableColumn>
@@ -1055,7 +997,6 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
                               <div key={nominee.nominee_id} className="w-48 flex-shrink-0">
                                 <NomineeCard 
                                   nominee={nominee}
-                                  isDragging={activeId === nominee.nominee_id}
                                 />
                               </div>
                             ))}
@@ -1117,7 +1058,7 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
                 {/* Campaign */}
                 <div>
                   <label htmlFor="campaign" className="block text-sm font-medium text-gray-700 mb-2">
-                    Campaign <span className="text-red-500">*</span>
+                    Đợt đề cử <span className="text-red-500">*</span>
                   </label>
                   <Input
                     id="campaign"
@@ -1238,7 +1179,7 @@ export const ProjectUpdateModal: React.FC<ProjectUpdateModalProps> = ({
 
       <DragOverlay>
         {draggedNominee ? (
-          <NomineeCard nominee={draggedNominee} isDragging />
+          <NomineeCard nominee={draggedNominee} />
         ) : null}
       </DragOverlay>
     </DndContext>

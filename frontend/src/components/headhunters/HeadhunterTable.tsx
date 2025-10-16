@@ -74,7 +74,11 @@ export const HeadhunterTable: React.FC<HeadhunterTableProps> = ({
             ) : (
               headhunters.map((headhunter) => {
                 return (
-                  <tr key={headhunter.headhunter_id} className="hover:bg-gray-50">
+                  <tr 
+                    key={headhunter.headhunter_id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => onEdit(headhunter)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {headhunter.name}
@@ -125,7 +129,10 @@ export const HeadhunterTable: React.FC<HeadhunterTableProps> = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => onEdit(headhunter)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onEdit(headhunter)
+                              }}
                               className="h-8 w-8 text-gray-600 hover:text-blue-600"
                             >
                               <Edit className="h-4 w-4" />
@@ -133,7 +140,10 @@ export const HeadhunterTable: React.FC<HeadhunterTableProps> = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => onDelete(headhunter.headhunter_id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onDelete(headhunter.headhunter_id)
+                              }}
                               className="h-8 w-8 text-gray-600 hover:text-red-600"
                             >
                               <Trash2 className="h-4 w-4" />

@@ -70,7 +70,11 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
               projects.map((project) => {
                 const status = formatProjectStatus(project.status)
                 return (
-                  <tr key={project.project_id} className="hover:bg-gray-50">
+                  <tr 
+                    key={project.project_id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => onEdit(project)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {formatProjectDisplayName(project)}
@@ -102,7 +106,10 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => onEdit(project)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onEdit(project)
+                          }}
                           className="h-8 w-8 text-gray-600 hover:text-blue-600"
                         >
                           <Edit className="h-4 w-4" />
@@ -110,7 +117,10 @@ export const ProjectTable: React.FC<ProjectTableProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => onDelete(project.project_id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDelete(project.project_id)
+                          }}
                           className="h-8 w-8 text-gray-600 hover:text-red-600"
                         >
                           <Trash2 className="h-4 w-4" />

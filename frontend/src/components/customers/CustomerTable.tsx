@@ -71,7 +71,11 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
             ) : (
               customers.map((customer) => {
                 return (
-                  <tr key={customer.customer_id} className="hover:bg-gray-50">
+                  <tr 
+                    key={customer.customer_id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => onEdit(customer)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {customer.name}
@@ -123,7 +127,10 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => onEdit(customer)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onEdit(customer)
+                          }}
                           className="h-8 w-8 text-gray-600 hover:text-blue-600"
                         >
                           <Edit className="h-4 w-4" />
@@ -131,7 +138,10 @@ export const CustomerTable: React.FC<CustomerTableProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => onDelete(customer.customer_id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDelete(customer.customer_id)
+                          }}
                           className="h-8 w-8 text-gray-600 hover:text-red-600"
                         >
                           <Trash2 className="h-4 w-4" />

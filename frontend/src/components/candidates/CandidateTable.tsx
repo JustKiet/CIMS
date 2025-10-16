@@ -103,7 +103,11 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
             ) : (
               candidates.map((candidate) => {
                 return (
-                  <tr key={candidate.candidate_id} className="hover:bg-gray-50">
+                  <tr 
+                    key={candidate.candidate_id} 
+                    className="hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleEdit(candidate)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {candidate.name}
@@ -134,7 +138,10 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleEdit(candidate)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEdit(candidate)
+                          }}
                           className="h-8 w-8 text-gray-600 hover:text-blue-600"
                           title="Chỉnh sửa"
                         >
@@ -143,7 +150,10 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => onDelete(candidate.candidate_id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDelete(candidate.candidate_id)
+                          }}
                           className="h-8 w-8 text-gray-600 hover:text-red-600"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -151,7 +161,10 @@ export const CandidateTable: React.FC<CandidateTableProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleNomination(candidate)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleNomination(candidate)
+                          }}
                           className="h-8 w-8 text-gray-600 hover:text-green-600"
                           title="Quản lý đề cử"
                         >
